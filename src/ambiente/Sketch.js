@@ -10,7 +10,7 @@ let soundMap;
 let agendaIndex = 0;
 let startTime;
 let letras = ['A', 'S', 'J', 'K', 'L'];
-let dificult = 1.75;
+let dificult = 2;
 
 let mostrarNota = false;
 let mostrarErro = false;
@@ -24,6 +24,7 @@ let qntFinal = 16;
 let FinalMusic = qntFinal;
 let FinalMusicGera = qntFinal;
 
+let telaInicial = true;
 let jogoAcabou = false;
 
 const colorOptions = [
@@ -91,6 +92,51 @@ const Sketch = () => {
 
       p.draw = () => {
             soundMap = { nota1, nota2, nota3, nota4, nota5, nota6, nota7 };   
+
+            if (telaInicial) {
+              p.background(30);
+              p.fill(255);
+              p.textAlign(p.CENTER, p.CENTER);
+              p.textSize(40);
+              p.text("Escolha a Dificuldade", p.width / 2, p.height / 2 - 120);
+            
+              p.textSize(28);
+              p.rectMode(p.CENTER);
+              p.noStroke();
+            
+              // Botão Fácil
+              p.fill(100, 200, 100);
+              p.rect(p.width / 2, p.height / 2 - 40, 200, 50);
+              p.fill(0);
+              p.text("Fácil", p.width / 2, p.height / 2 - 40);
+            
+              // Botão Médio
+              p.fill(255, 200, 0);
+              p.rect(p.width / 2, p.height / 2 + 30, 200, 50);
+              p.fill(0);
+              p.text("Médio", p.width / 2, p.height / 2 + 30);
+            
+              // Botão Difícil
+              p.fill(255, 100, 100);
+              p.rect(p.width / 2, p.height / 2 + 100, 200, 50);
+              p.fill(0);
+              p.text("Difícil", p.width / 2, p.height / 2 + 100);
+
+              p.mousePressed = () => {
+                let cx = p.width / 2;
+    
+              if (p.dist(p.mouseX, p.mouseY, cx, p.height / 2 - 40) < 100) {
+                iniciarJogo(1.0); // Fácil
+              } else if (p.dist(p.mouseX, p.mouseY, cx, p.height / 2 + 30) < 100) {
+                iniciarJogo(2); // Médio
+              } else if (p.dist(p.mouseX, p.mouseY, cx, p.height / 2 + 100) < 100) {
+                iniciarJogo(15); // Difícil
+              }
+
+              }
+            
+              return; 
+            }
             
             p.background(220);
            
@@ -146,7 +192,7 @@ const Sketch = () => {
             
             // Desenha a bolinha girando
             let movingRadius = 30;
-            
+             
             if (palheta) {
               let size = 80;
               p.imageMode(p.CENTER);
@@ -228,24 +274,33 @@ const Sketch = () => {
           p.noLoop();
           p.keyPressed = () => {
             reiniciarJogo();
+            telaInicial =true;
           }
         }
       };
       
       //Functions ------------------
 
-      function reiniciarJogo() {   
+      function iniciarJogo(dif) {
+        dificult = dif;
+        telaInicial = false;
+        jogoAcabou = false;
+        reiniciarJogo(); 
+        
+      }
+
+      function reiniciarJogo() { 
+          
         angle = 0;
         radius = 275;
 
         staticBalls = [];
-        soundMap = undefined; // ou recarregar os sons, se necessário
+        soundMap = undefined; 
         agendaIndex = 0;
 
-        startTime = p.millis(); // recomeça a agenda
+        startTime = p.millis(); 
 
         letras = ['A', 'S', 'J', 'K', 'L'];
-        dificult = 1.75; // se ela muda durante o jogo
 
         mostrarNota = false;
         mostrarErro = false;
