@@ -1,31 +1,33 @@
-// src/components/Sketch.js
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import p5 from "p5";
 import 'p5/lib/addons/p5.sound';
 
 let angle = 0;
-let radius = 275;
-let staticBalls = [];
-let soundMap; 
-let agendaIndex = 0;
-let startTime;
-let letras = ['A', 'S', 'J', 'K', 'L'];
-let dificult = 2;
-
-let mostrarNota = false;
-let mostrarErro = false;
+let rotacao = 0;
 let notaX = 0;
 let notaY = 0;
 let sequencia = 0;
 let score = 0;
-let vidas = [true, true, true]; // 3 vidas
-
-let qntFinal = 16;
+let agendaIndex = 0;
+let radius = 275;
+let staticBalls = [];
+let etapa = 0;
+let vidas = [true, true, true, true, true, true, true, true, true, true]; 
+let mostrarNota = false;
+let mostrarErro = false;
+let telaInicial = false;
+let introducao = true;
+let tutorial = false;
+let jogoAcabou = false;
+let startTime;
+let dificult;
+let soundMap; 
+let qntFinal;
 let FinalMusic = qntFinal;
 let FinalMusicGera = qntFinal;
-
-let telaInicial = true;
-let jogoAcabou = false;
+let opacidade = 0;
+let fadeOut = false;
+let fadeIn = false;
 
 const colorOptions = [
   { color: [0, 0, 255], letra: 'A' },
@@ -40,10 +42,11 @@ const Sketch = () => {
     useEffect(() => {
       const sketch = (p) => {
     
-      let nota1, nota2, nota3, nota4, nota5, nota6, nota7;
-      let palheta, notaTocada, notaTocada2, violao, vida, errou;
+      let nota1, nota2, nota3, nota4, nota5, nota6, nota7, intro;
+      let palheta, notaTocada, notaTocada2, violao, vida, errou, notas, exemplo;
 
       p.preload = () => {
+        intro = p.loadSound('/sons/intro.mp3');
         nota1 = p.loadSound('/sons/nota1.wav');
         nota2 = p.loadSound('/sons/nota2.wav');
         nota3 = p.loadSound('/sons/nota3.wav');
@@ -58,202 +61,150 @@ const Sketch = () => {
         violao = p.loadImage('/img/violao.png');
         vida = p.loadImage('/img/vida.png');
         errou = p.loadImage('/img/errou.png');
-
+        notas = p.loadImage('/img/notas.png');
+        exemplo = p.loadImage('/img/exemplo.gif');
       };
 
-      //Frenquência e sequência com que as notas aparecem.
-      const spawnAgenda = [
-        { time: 500 * dificult, sound: 'nota1' },
-        { time: 1000 * dificult, sound: 'nota2' },
-        { time: 1500 * dificult, sound: 'nota3' },
-        { time: 2000 * dificult, sound: 'nota2' },
-
-        { time: 2500 * dificult, sound: 'nota4' },
-        { time: 3000 * dificult, sound: 'nota2' },
-        { time: 3500 * dificult, sound: 'nota5' },
-        { time: 3750 * dificult, sound: 'nota3' },
-
-        { time: 4500 * dificult, sound: 'nota6' },
-        { time: 5000 * dificult, sound: 'nota2' },
-        { time: 5500 * dificult, sound: 'nota3' },
-        { time: 6000 * dificult, sound: 'nota2' },
-
-        { time: 6500 * dificult, sound: 'nota7' },
-        { time: 7000 * dificult, sound: 'nota2' },
-        { time: 7500 * dificult, sound: 'nota3' },
-        { time: 8000 * dificult, sound: 'nota2' },
-      ];
-
-     
-      p.setup = () => {                 
-        p.createCanvas(p.windowWidth, p.windowHeight);
-        startTime = p.millis(); 
+       p.setup = () => {                 
+        p.createCanvas(p.windowWidth, p.windowHeight); 
+        startTime = p.millis();     
+        // Toca a música quando o usuário interagir
+        p.userStartAudio().then(() => {
+          if (!intro.isPlaying()) {
+            intro.loop();
+          }
+        });        
       };
 
-      p.draw = () => {
-            soundMap = { nota1, nota2, nota3, nota4, nota5, nota6, nota7 };   
+      p.draw = () => {        
+        soundMap = { nota1, nota2, nota3, nota4, nota5, nota6, nota7 };   
 
-            if (telaInicial) {
-              p.background(30);
-              p.fill(255);
-              p.textAlign(p.CENTER, p.CENTER);
-              p.textSize(40);
-              p.text("Escolha a Dificuldade", p.width / 2, p.height / 2 - 120);
-            
-              p.textSize(28);
-              p.rectMode(p.CENTER);
-              p.noStroke();
-            
-              // Botão Fácil
-              p.fill(100, 200, 100);
-              p.rect(p.width / 2, p.height / 2 - 40, 200, 50);
-              p.fill(0);
-              p.text("Fácil", p.width / 2, p.height / 2 - 40);
-            
-              // Botão Médio
-              p.fill(255, 200, 0);
-              p.rect(p.width / 2, p.height / 2 + 30, 200, 50);
-              p.fill(0);
-              p.text("Médio", p.width / 2, p.height / 2 + 30);
-            
-              // Botão Difícil
-              p.fill(255, 100, 100);
-              p.rect(p.width / 2, p.height / 2 + 100, 200, 50);
-              p.fill(0);
-              p.text("Difícil", p.width / 2, p.height / 2 + 100);
+        if(introducao){
+          perguntinha();
+          return;
+        } 
 
-              p.mousePressed = () => {
-                let cx = p.width / 2;
-    
-              if (p.dist(p.mouseX, p.mouseY, cx, p.height / 2 - 40) < 100) {
-                iniciarJogo(1.0); // Fácil
-              } else if (p.dist(p.mouseX, p.mouseY, cx, p.height / 2 + 30) < 100) {
-                iniciarJogo(2); // Médio
-              } else if (p.dist(p.mouseX, p.mouseY, cx, p.height / 2 + 100) < 100) {
-                iniciarJogo(15); // Difícil
-              }
+        if(tutorial){
+          apresentaJogo();
+          return;
+        }
+        
+        if (telaInicial) {
+          escolherDificuldade();  
+          return;          
+        }
 
-              }
+        //Frenquência e sequência com que as notas aparecem.
+        const spawnAgenda = [
+          { time: 2000 * dificult, sound: 'nota1' },
+          { time: 2500 * dificult, sound: 'nota2' },
+          { time: 3000 * dificult, sound: 'nota3' },
+          { time: 3500 * dificult, sound: 'nota2' },
+
+          { time: 4000 * dificult, sound: 'nota4' },
+          { time: 4500 * dificult, sound: 'nota2' },
+          { time: 5000 * dificult, sound: 'nota5' },
+          { time: 5500 * dificult, sound: 'nota3' },
+
+          { time: 6000 * dificult, sound: 'nota6' },
+          { time: 6500 * dificult, sound: 'nota2' },
+          { time: 7000 * dificult, sound: 'nota3' },
+          { time: 7500 * dificult, sound: 'nota2' },
+
+          { time: 8000 * dificult, sound: 'nota7' },
+          { time: 8500 * dificult, sound: 'nota2' },
+          { time: 9000 * dificult, sound: 'nota3' },
+          { time: 9500 * dificult, sound: 'nota2' },
+        ];
+        
+        //p.background(220);
+        
+        //circulo central
+        p.push()
+        p.fill(0)
+        p.circle(p.width / 2, p.height / 2, radius*2.5);
+        p.pop()       
+        
+        p.image(violao, p.width / 2 + 950, p.height/2, p.Width, p.Height );              
+        
+        p.push()
+        p.strokeWeight(1);
+        p.textSize(25);
+        p.fill(250,0,0)
+        p.text("Pontuação:", 100, 50);
+        p.fill(150,150,150)
+        p.text(parseInt(score), 200, 50);
+        p.pop()
+
+        p.translate(p.width / 2, p.height / 2); 
+        
+        // Posição da bolinha girando
+        let x = radius * p.cos(angle);
+        let y = radius * p.sin(angle);
+        
+        // Desenha a bolinha girando
+        let movingRadius = 30;
+          
+        if (palheta) {
+          let size = 80;
+          p.imageMode(p.CENTER);
+          p.image(palheta, x, y, size, size); 
+        }       
+        
+        angle += rotacao;
+        
+        let elapsed = p.millis() - startTime;
+        
+        // Checa se é hora de spawnar a próxima bolinha
+        if (agendaIndex < spawnAgenda.length && elapsed >= spawnAgenda[agendaIndex].time && FinalMusicGera >= 0 ) {
+          spawnStaticBall(x, y, angle, spawnAgenda[agendaIndex].sound);
+          FinalMusicGera--;
+          agendaIndex++;
+        }
+        
+        // Quando termina, reinicia para fazer o loop
+        if (agendaIndex >= spawnAgenda.length ) {
+          agendaIndex = 0;
+          startTime = p.millis(); 
+        }        
             
-              return; 
-            }
-            
-            p.background(220);
-           
-            //circulo central
-            p.push()
-            p.fill(0)
-            p.circle(p.width / 2, p.height / 2, radius*2.5);
-            p.pop()       
-            
-            p.image(violao, p.width / 2 + 950, p.height/2, p.Width, p.Height );              
-            
-            p.push()
-            p.strokeWeight(1);
-            p.textSize(25);
-            p.fill(250,0,0)
-            p.text("Pontuação:", 100, 50);
-            p.fill(150,150,150)
-            p.text(parseInt(score), 200, 50);
-            p.pop()
-            //Instrução
-            let diametro = 60;
-            let spacing = 150;
-            let totalWidth = spacing * (letras.length - 1);
-            let startX = (p.width - totalWidth) / 2;
-            let y1 = 50;
-            p.textAlign(p.CENTER, p.CENTER);
-            p.textSize(16);
-            for (let i = 0; i < colorOptions.length; i++) {
-              let x = startX + i * spacing;
+        for (let b of staticBalls) {
+          let d = p.dist(x, y, b.x, b.y);
+          if (!b.activated && d < movingRadius) {
+            b.activated = true;                 
+            console.log("gera:",FinalMusicGera);
+          }    
+          p.fill(b.color[0], b.color[1], b.color[2]);          
+          p.circle(b.x, b.y, 50);
+          p.stroke(51);
+          p.fill(0); 
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textSize(24);
+          p.text(b.letra, b.x, b.y);    
               
-              // Extrai a cor e a letra do objeto
-              let { color, letra } = colorOptions[i];
-              let [r, g, b] = color;
-              
-              // Desenha o círculo
-              p.fill(r, g, b);
-              p.strokeWeight(1);
-              p.stroke(51);
-              p.circle(x, y1, diametro);
-              
-              // Desenha a letra preta no centro
-              p.fill(0);
-              p.textAlign(p.CENTER, p.CENTER);
-              p.textSize(16);
-              p.text(letra, x, y1);
-            }           
-            
-            p.translate(p.width / 2, p.height / 2); 
-            
-            // Posição da bolinha girando
-            let x = radius * p.cos(angle);
-            let y = radius * p.sin(angle);
-            
-            // Desenha a bolinha girando
-            let movingRadius = 30;
-             
-            if (palheta) {
-              let size = 80;
-              p.imageMode(p.CENTER);
-              p.image(palheta, x, y, size, size); 
-            }
-            
-            // Atualiza ângulo
-            angle += 0.03;
-            
-            let elapsed = p.millis() - startTime;
-            
-            // Checa se é hora de spawnar a próxima bolinha
-            if (agendaIndex < spawnAgenda.length && elapsed >= spawnAgenda[agendaIndex].time && FinalMusicGera >= 0 ) {
-              spawnStaticBall(x, y, angle, spawnAgenda[agendaIndex].sound);
-              FinalMusicGera--;
-              agendaIndex++;
-            }
-            
-            // Quando termina, reinicia para fazer o loop
-            if (agendaIndex >= spawnAgenda.length ) {
-              agendaIndex = 0;
-              startTime = p.millis(); 
-            }        
-            
-            for (let b of staticBalls) {
-              let d = p.dist(x, y, b.x, b.y);
-              if (!b.activated && d < movingRadius) {
-                b.activated = true;                 
-                console.log("gera:",FinalMusicGera);
-              }    
-              p.fill(b.color[0], b.color[1], b.color[2]);          
-              p.circle(b.x, b.y, 50);
-              p.fill(255); 
-              p.textAlign(p.CENTER, p.CENTER);
-              p.textSize(24);
-              p.text(b.letra, b.x, b.y);    
-                  
-            }
+        }
+
         updateStaticBalls();       
         checarColisoes(x, y);
         
         if (mostrarNota && notaTocada && sequencia < 5) {
           p.imageMode(p.CENTER);
-          p.image(notaTocada, notaX, notaY, 250, 250); // ajusta o tamanho conforme necessário         
+          p.image(notaTocada, notaX, notaY, 500, 500); // ajusta o tamanho conforme necessário         
         }
         if (mostrarNota && notaTocada && sequencia >= 5) {
           p.imageMode(p.CENTER);
-          p.image(notaTocada2, notaX, notaY, 500, 500); // ajusta o tamanho conforme necessário         
+          p.image(notaTocada2, notaX, notaY, 1000, 1000); // ajusta o tamanho conforme necessário         
         }  
         if (mostrarErro && errou ) {
           p.imageMode(p.CENTER);
           p.image(errou, 0, 0, 500, 500); // ajusta o tamanho conforme necessário         
-        }  
-        
-            // lógica normal do jogo
-          
+        } 
+                              
         const vidaSize = 100;
         
         for (let i = 0; i < vidas.length; i++) {
           if (vidas[i] && vida) {
-            p.image(vida, -600 + i * (vidaSize + 10), -200, vidaSize, vidaSize);
+            p.image(vida, -550 + i * (vidaSize + 10), -400, vidaSize, vidaSize);
           }
         }
         
@@ -270,61 +221,284 @@ const Sketch = () => {
           p.text("FIM DE JOGO", 0, 0 - 30);
           p.textSize(30);
           p.text("Pontuação: " + Math.floor(score), 0, 0 + 20);
+          p.text("Aperte qualquer tecla para sair ", 0, 0 + 120);
           p.pop();  
-          p.noLoop();
+          p.noLoop();          
           p.keyPressed = () => {
             reiniciarJogo();
-            telaInicial =true;
+            telaInicial = true;
+            if (!intro.isPlaying()) {
+            intro.loop();
+          }
           }
         }
       };
       
       //Functions ------------------
 
-      function iniciarJogo(dif) {
-        dificult = dif;
-        telaInicial = false;
-        jogoAcabou = false;
-        reiniciarJogo(); 
+      function perguntinha(){
+        p.background(30);
+
+        p.fill(255);
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(60);
+        p.text("--> Herói do violão <--", p.width / 2, p.height / 2 - 320);
+
+        p.fill(255);
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(40);
+        p.text("Use o mouse para escolher uma opção", p.width / 2, p.height / 2 - 220);
+
+        p.fill(255);
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(40);
+        p.text("Deseja fazer o tutorial do jogo ?", p.width / 2, p.height / 2 - 120);
+      
+        p.textSize(28);
+        p.rectMode(p.CENTER);
+        p.noStroke();
+      
+        let btnX = p.width / 2 ; 
+        let btnY = p.height / 2 ;
+
+        // Sim
+        if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY - 70  && p.mouseY < btnY - 10) {          
+          p.fill(200, 100, 100); 
+        } else {
+          p.fill(100);          
+        }
+        p.rect(p.width / 2, p.height / 2 - 40, 200, 50);
+        p.fill(0);
+        p.text("Sim", p.width / 2, p.height / 2 - 40);   
         
+        // com certeza
+        if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 75  && p.mouseY < btnY + 135) {
+          p.fill(200, 100, 100); 
+        } else {
+          p.fill(100);
+        }
+        p.rect(p.width / 2, p.height / 2 + 100, 200, 50);
+        p.fill(0);
+        p.text("Com certeza", p.width / 2, p.height / 2 + 100);
+
+        p.mousePressed = () => {   
+          if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY - 70  && p.mouseY < btnY - 10) {     
+            introducao = false; 
+            tutorial = true;     
+            etapa = 1;   
+            //telaInicial = true;        
+                
+          }
+          if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 75  && p.mouseY < btnY + 135) {
+            introducao = false;
+            tutorial = true;
+            etapa = 1;
+            //telaInicial = true;  
+
+          }
+        } 
       }
 
-      function reiniciarJogo() { 
-          
+      function apresentaJogo(){
+        p.background(30);
+        
+        //etapa 1
+        
+        if (etapa === 1 && notas) {
+          p.fill(255);
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textSize(40);
+          p.text("Essa são as notas", p.width / 2, p.height / 2 - 220);
+          p.imageMode(p.CENTER);
+          p.image(notas, p.width / 2, p.height / 2, 693, 210); // ajusta o tamanho conforme necessário
+          p.fill(255);
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textSize(40);
+          p.text("cada nota tem uma COR e LETRA referente a uma tecla do teclado", p.width / 2, p.height / 2 + 220 );  
+        }  
+
+        let btnX = p.width / 2 ; 
+        let btnY = p.height / 2  ;
+        if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 310 && p.mouseY < btnY + 380) {          
+          p.fill(200, 100, 100); 
+        } else {
+          p.fill(100);          
+        }
+        p.mousePressed = () => {   
+          if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 310 && p.mouseY < btnY + 380 && fadeOut === false) {     
+            introducao = false; 
+            tutorial = true; 
+            fadeOut = true;
+            opacidade = 0;               
+            //telaInicial = true;    
+          }
+        }
+        p.rect(p.width / 2, p.height / 2 + 350, 200, 50);
+        p.fill(0);
+        p.text("Próximo", p.width / 2, p.height / 2 + 350);   
+
+        if (etapa === 2) {
+          p.fill(255);
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textSize(40);
+          p.text("essa é a palheta", p.width / 2, p.height / 2 - 420);
+          p.text("ela orbita a boca do violão", p.width / 2, p.height / 2 - 380);
+          p.imageMode(p.CENTER);
+          p.image(palheta, p.width / 2, p.height / 2, 128, 128);                    
+        }  
+
+        if (etapa === 3) {
+          p.fill(255);
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textSize(40);
+          p.text("Toda vez que a palheta fica na mesma posição que a nota", p.width / 2, p.height / 2 - 420);
+          p.text("você terá que clicar a tecla referente a nota", p.width / 2, p.height / 2 - 380);
+          p.text("obs: As notas tem padrão de cor e letra, mas não de sequência.", p.width / 2, p.height / 2 - 340);
+          p.imageMode(p.CENTER);
+          p.image(exemplo, p.width / 2, p.height / 2, 1000, 600);         
+        } 
+
+        if(etapa >= 4){          
+          etapa = 4;
+          tutorial = false;
+          telaInicial = true;
+
+        }
+
+
+        if (fadeOut) {
+          p.noStroke();
+          p.fill(0, opacidade);
+          p.rect(0, 0, p.windowWidth *2, p.windowHeight*2);
+      
+          opacidade += 1; // velocidade do fade
+          if (opacidade >= 255) {
+            opacidade = 255;
+            fadeOut = false; 
+            etapa++;      
+            fadeIn = true;      
+          }
+        }
+
+        if (fadeIn) {
+          p.noStroke();
+          p.fill(0, opacidade);
+          p.rect(0, 0, p.windowWidth *2, p.windowHeight*2);
+      
+          opacidade -= 1; // velocidade do fade
+          if (opacidade <= 0) {
+            opacidade = 0;
+            fadeOut = false;                   
+            fadeIn = false;      
+          }
+        }
+      }
+            
+      function escolherDificuldade(){  
+        
+        p.background(30);
+        p.fill(255);
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(40);
+        p.text("Escolha a Dificuldade", p.width / 2, p.height / 2 - 120);
+      
+        p.textSize(28);
+        p.rectMode(p.CENTER);
+        p.noStroke();
+      
+        // Coordenadas e tamanho do botão
+        let btnX = p.width / 2 ; // centralizado horizontalmente
+        let btnY = p.height / 2 ;
+
+        // Botão 1
+        if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY - 70  && p.mouseY < btnY - 10) {          
+          p.fill(200, 100, 100); // Hover
+        } else {
+          p.fill(100);          
+        }
+        p.rect(p.width / 2, p.height / 2 - 40, 200, 50);
+        p.fill(0);
+        p.text("Fácil", p.width / 2, p.height / 2 - 40);           
+      
+        // Botão Médio
+        if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 5  && p.mouseY < btnY +65) {
+          p.fill(200, 100, 100);           
+        } else {
+          p.fill(100);
+        }
+        p.rect(p.width / 2, p.height / 2 + 30, 200, 50);
+        p.fill(0);
+        p.text("Médio", p.width / 2, p.height / 2 + 30);
+
+        // Botão Difícil
+        if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 75  && p.mouseY < btnY + 135) {
+          p.fill(200, 100, 100); // Hover
+        } else {
+          p.fill(100);
+        }
+        p.rect(p.width / 2, p.height / 2 + 100, 200, 50);
+        p.fill(0);
+        p.text("Difícil", p.width / 2, p.height / 2 + 100);
+
+        p.mousePressed = () => {   
+          if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY - 70  && p.mouseY < btnY - 10 && telaInicial === true) {  
+            if (intro.isPlaying()) {
+              intro.stop(); 
+            }
+            rotacao = 0.03;
+            qntFinal = 16;
+            dificult = 2.0;
+            telaInicial = false;
+            jogoAcabou = false;
+            reiniciarJogo(); 
+          } 
+          if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 5  && p.mouseY < btnY +65 && telaInicial === true) {
+            if (intro.isPlaying()) {
+              intro.stop(); 
+            }           
+            rotacao = 0.03;
+            qntFinal = 32;
+            dificult = 1.0;
+            telaInicial = false;
+            jogoAcabou = false;
+            reiniciarJogo();  
+          } 
+          if (p.mouseX > btnX - 100  && p.mouseX < btnX + 100  && p.mouseY > btnY + 75  && p.mouseY < btnY + 135 && telaInicial === true) {
+            if (intro.isPlaying()) {
+              intro.stop(); 
+            }
+            rotacao = 0.04;
+            qntFinal = 128;
+            dificult = 0.9;
+            telaInicial = false;
+            jogoAcabou = false;
+            reiniciarJogo();  
+          }
+        }         
+      }      
+
+      //Resteta todas as variáveis importantes
+      function reiniciarJogo() {           
         angle = 0;
         radius = 275;
-
         staticBalls = [];
         soundMap = undefined; 
         agendaIndex = 0;
-
         startTime = p.millis(); 
-
-        letras = ['A', 'S', 'J', 'K', 'L'];
-
         mostrarNota = false;
         mostrarErro = false;
         notaX = 0;
         notaY = 0;
-
         sequencia = 0;
         score = 0;
-
-        vidas = [true, true, true]; // resetar para 3 vidas
-
+        vidas = [true, true, true, true, true, true, true, true, true, true]; // resetar para 3 vidas
         FinalMusic = qntFinal;
         FinalMusicGera = qntFinal;
-
         jogoAcabou = false;
         p.loop(); // retoma o draw() se tiver usado p.noLoop()
       }
-
-      function spawnStaticBall(x, y, angle, soundName) {
-        if (!soundMap) {
-          console.warn("soundMap ainda não foi inicializado.");
-          return;
-        }
-
+      //gera as bolinhas/notas que serão destruidas.
+      function spawnStaticBall(x, y, angle, soundName) { 
         let som = soundMap[soundName] || null;
         let normalX = -p.sin(angle);
         let normalY = p.cos(angle);
@@ -342,9 +516,10 @@ const Sketch = () => {
           letra: opcao.letra,
           activated: false,
           som: som
-        });
-      }
+        });     
+       }
 
+      // movimenta as bolinhas/notas até a Boca do violão
       function updateStaticBalls() {
         for (let ball of staticBalls) {
           let dx = ball.destinoX - ball.x;
@@ -366,6 +541,7 @@ const Sketch = () => {
         }
       }
       
+      // gerencia mecanicas relacionadas a colisão
       function checarColisoes(x, y) {        
         p.keyPressed = function () {
           let tecla = p.key.toUpperCase();        
@@ -376,7 +552,7 @@ const Sketch = () => {
               
               console.log("final:",FinalMusic);
               if (b.som && b.som.isLoaded()) {
-                b.som.setVolume(0.5);
+                //b.som.setVolume(0.5);
                 b.som.play(); 
               }    
               if(sequencia < 5){
@@ -387,7 +563,7 @@ const Sketch = () => {
               }
               if(sequencia > 10){
                 score = score * 1.1;
-                if (vidas.length < 3) {
+                if (vidas.length < 10) {
                   vidas.push(true); // adiciona uma vida
                 }
               }
@@ -401,6 +577,11 @@ const Sketch = () => {
               sequencia++;  
               FinalMusic--;            
               break;
+            }
+            if (b.letra !== tecla && d < 50) {
+              if (vidas.length > 0) {
+                vidas.pop(); // remove uma vida
+              } 
             }
           }
         };
@@ -428,7 +609,9 @@ const Sketch = () => {
             break;
           }
         }        
-      }      
+      } 
+      
+      
     };
     const p5Instance = new window.p5(sketch, document.getElementById('p5-container'));
 
