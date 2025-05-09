@@ -10,8 +10,10 @@ let sequencia = 0;
 let score = 0;
 let agendaIndex = 0;
 let radius = 275;
-let staticBalls = [];
+let opacidade = 0;
+let movingRadius = 30;
 let etapa = 0;
+let staticBalls = [];
 let vidas = [true, true, true, true, true, true, true, true, true, true]; 
 let mostrarNota = false;
 let mostrarErro = false;
@@ -19,18 +21,16 @@ let telaInicial = false;
 let introducao = true;
 let tutorial = false;
 let jogoAcabou = false;
+let fadeOut = false;
+let fadeIn = false;
 let startTime;
 let dificult;
 let soundMap; 
 let qntFinal;
 let FinalMusic = qntFinal;
 let FinalMusicGera = qntFinal;
-let opacidade = 0;
-let fadeOut = false;
-let fadeIn = false;
-let movingRadius = 30;
-const vidaSize = 100;
 
+const vidaSize = 100;
 const colorOptions = [
   { color: [0, 0, 255], letra: 'A' },
   { color: [255, 255, 0], letra: 'S' },
@@ -111,8 +111,6 @@ const Sketch = () => {
       };
       
       //Functions ------------------
-
-
       function perguntinha(){
         p.background(30);
 
@@ -321,7 +319,7 @@ const Sketch = () => {
               intro.stop(); 
             }
             rotacao = 0.03;
-            qntFinal = 16;
+            qntFinal = 32;
             dificult = 2.0;
             telaInicial = false;
             jogoAcabou = false;
@@ -332,7 +330,7 @@ const Sketch = () => {
               intro.stop(); 
             }           
             rotacao = 0.03;
-            qntFinal = 32;
+            qntFinal = 64;
             dificult = 1.0;
             telaInicial = false;
             jogoAcabou = false;
@@ -446,9 +444,7 @@ const Sketch = () => {
               notaY = b.y;  
               mostrarNota = true;              
               staticBalls.splice(i, 1); // remove a bolinha 
-              setTimeout(() => {
-                mostrarNota = false;
-              }, 150);              
+                            
               sequencia++;  
               FinalMusic--;            
               break;
@@ -459,6 +455,9 @@ const Sketch = () => {
               } 
             }
           }
+          setTimeout(() => {
+            mostrarNota = false;
+          }, 150);
         };
 
         for (let j = staticBalls.length - 1; j >= 0; j--) {
@@ -477,13 +476,12 @@ const Sketch = () => {
             }          
 
             staticBalls.splice(j, 1); 
-
-            setTimeout(() => {
-              mostrarErro = false;
-            }, 150);
             break;
           }
-        }        
+        } 
+        setTimeout(() => {
+          mostrarErro = false;
+        }, 150);       
       } 
       
       // Contador de pontos
